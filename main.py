@@ -10,7 +10,7 @@ import nicovideo  # pylint: disable=E0401
 
 parser = ArgumentParser(prog='nicovide-countmonitor', description='Monitor nicovideo\'s video counter.')
 parser.add_argument('--video', '-v', help='Video ID', metavar='ID')
-parser.add_argument('--readlog', '-r', default=False, action="store_true", help='Read log file, do not monitor')
+parser.add_argument('--readlog', '-r', default=False, action="store_true", help='Replay log file, do not monitor')
 parser.add_argument('--interval', '-i', help='Interval second[s] (Ignored if --readlog specified)', default=10, metavar='second[s]')
 parser.add_argument('--log', '-l', help='Logging file (json)', default=None)
 parser.add_argument('--count', '-c', help='Records to show', default=-1)
