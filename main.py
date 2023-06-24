@@ -13,6 +13,7 @@ parser.add_argument('--video', '-v', help='Video ID', metavar='ID')
 parser.add_argument('--readlog', '-r', default=False, action="store_true", help='Read log file, do not monitor')
 parser.add_argument('--interval', '-i', help='Interval second[s] (Ignored if --readlog specified)', default=10, metavar='second[s]')
 parser.add_argument('--log', '-l', help='Logging file (json)', default=None)
+parser.add_argument('--count', '-c', help='Records to show', default=-1)
 args = parser.parse_args()
 
 video = nicovideo.Video(args.video)
@@ -52,7 +53,9 @@ if args.log and not args.readlog:
         jsonlog = []
 
 if not args.readlog:
+    count = 0
     while True:
+        count = count + 1
         data = video.get_metadata()
         print(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---')
         print(f'Title: {data.title}')
@@ -67,7 +70,8 @@ if not args.readlog:
             jsonlog.append(logdata)
             with open(args.log, 'w', encoding='utf-8') as logfile:
                 logfile.write(json.dumps(jsonlog))
-
+        if count >= int(args.count) and args.count != -1:
+            break
         time.sleep(int(args.interval))
 else:
     try:
@@ -79,11 +83,11 @@ else:
     except json.decoder.JSONDecodeError:
         print("Error: Log file broken.")
         exit(1)
-    for record in log:
+    for record in log[-int(args.count):] if args.count != -1 else log:
         if (not args.video) or args.video == record["videoid"]:
             print(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---')
             print(f'Title: {record["title"]}')
             print(f'Owner: {record["owner"]}')
+            print(record["counts"])
             for tag in record["tags"]:
                 print(f'Tag: {tag}')
-            print(record["counts"])
