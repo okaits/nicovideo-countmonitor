@@ -4,6 +4,7 @@ import datetime
 import json
 import time
 import os
+from typing import Union
 from argparse import ArgumentParser
 
 import nicovideo  # pylint: disable=E0401
@@ -36,67 +37,127 @@ def listvar2str(inputdata: list) -> list:
     """ ex. [a, b, {"c": True}, [e]] -> [str(a), str(b), {"c": True}, [str(e)]] """
     for index, var in enumerate(inputdata):
         if not isinstance(var, (str, int, float, bool, type(None), dict, list, tuple)):
-            inputdata[index] = str(var)
+            if var.__class__.__module__ == 'nicovideo':
+                inputdata[index] = vars(var)
+            else:
+                inputdata[index] = str(var)
         if isinstance(var, (list, tuple)):
             inputdata[index] = listvar2str(var)
         if isinstance(var, dict):
             inputdata[index] = dictvar2str(var)
     return inputdata
 
-if args.log and not args.readlog:
-    print('Logging enabled.')
-    try:
-        with open(args.log, 'r', encoding='utf-8') as logfile:
-            jsonlog = json.load(logfile)
-    except json.decoder.JSONDecodeError:
-        if os.path.isfile(args.log):
-            print('Error: Log file broken. Exitting...')
-            exit(1)
-    except FileNotFoundError:
-        jsonlog = []
+def counts_comparing(label: str, count: int, count_before: Union[int, type(None)] = None) -> str:
+    """ ex. label=Views, count=100, count_before=80 -> "Views: 100 (+20)" """
+    if count_before is None:
+        return f'{label}: {count}'
+    elif count == count_before:
+        return f'{label}: {count}'
+    elif count > count_before:
+        return f'{label}: {count} (+{count - count_before})'
+    else:
+        return f'{label}: {count} ({count - count_before})'
 
-if not args.readlog:
-    count = 0
-    while True:
-        count = count + 1
-        data = video.get_metadata()
-        print(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---')
-        print(f'Title: {data.title}')
-        print(f'Owner: {str(data.owner)}')
-        print(f'Views: {data.counts.views}')
-        print(f'Comments: {data.counts.comments}')
-        print(f'Mylists: {data.counts.mylists}')
-        print(f'Likes: {data.counts.likes}')
-        for tag in data.tags:
-            print(f'Tag: {tag.name}', '(Locked)' if tag.locked else '')
-        if args.log:
-            logdata = vars(data)
-            logdata["datetime"] = datetime.datetime.now()
-            logdata = dictvar2str(logdata)
-            jsonlog.append(logdata)
-            with open(args.log, 'w', encoding='utf-8') as logfile:
-                logfile.write(json.dumps(jsonlog))
-        if count >= int(args.count) and args.count != -1:
-            break
-        time.sleep(int(args.interval))
-else:
-    try:
-        with open(args.log, 'r', encoding='utf-8') as logfile:
-            log = json.load(logfile)
-    except FileNotFoundError:
-        print("Error: Log file not found.")
-        exit(1)
-    except json.decoder.JSONDecodeError:
-        print("Error: Log file broken.")
-        exit(1)
-    for record in log[-int(args.count):] if args.count != -1 else log:
-        if (not args.video) or args.video == record["videoid"]:
-            print(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---')
-            print(f'Title: {record["title"]}')
-            print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
-            print(f'Views: {record["counts"]["views"]}')
-            print(f'Comments: {record["counts"]["comments"]}')
-            print(f'Mylists: {record["counts"]["mylists"]}')
-            print(f'Likes: {record["counts"]["likes"]}')
-            for tag in record["tags"]:
-                print(f'Tag: {tag}')
+def main():
+    """ Main func """
+    if args.log and not args.readlog:
+        print('Logging enabled.')
+        try:
+            with open(args.log, 'r', encoding='utf-8') as logfile:
+                jsonlog = json.load(logfile)
+        except json.decoder.JSONDecodeError:
+            if os.path.isfile(args.log):
+                print('Error: Log file broken. Exitting...')
+                exit(1)
+        except FileNotFoundError:
+            jsonlog = []
+
+    if not args.readlog:
+        count = 0
+        previous_data = None
+        while True:
+            count = count + 1
+            data = video.get_metadata()
+            print(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---')
+            print(f'Title: {data.title}')
+            print(f'Owner: {str(data.owner)}')
+            if previous_data:
+                print(counts_comparing('Views', data.counts.views, previous_data.counts.views))
+                print(counts_comparing('Comments', data.counts.comments, previous_data.counts.comments))
+                print(counts_comparing('Mylists', data.counts.mylists, previous_data.counts.mylists))
+                print(counts_comparing('Likes', data.counts.likes, previous_data.counts.likes))
+            else:
+                print(counts_comparing('Views', data.counts.views))
+                print(counts_comparing('Comments', data.counts.comments))
+                print(counts_comparing('Mylists', data.counts.mylists))
+                print(counts_comparing('Likes', data.counts.likes))
+            for tag in data.tags:
+                print(f'Tag: {tag.name}', '(Locked)' if tag.locked else '')
+            if args.log:
+                logdata = vars(data)
+                logdata["datetime"] = datetime.datetime.now()
+                logdata = dictvar2str(logdata.copy())
+                jsonlog.append(logdata)
+                with open(args.log, 'w', encoding='utf-8') as logfile:
+                    logfile.write(json.dumps(jsonlog))
+            if count >= int(args.count) and args.count != -1:
+                break
+
+            previous_data = data
+            time.sleep(int(args.interval))
+    else:
+        try:
+            with open(args.log, 'r', encoding='utf-8') as logfile:
+                log = json.load(logfile)
+        except FileNotFoundError:
+            print("Error: Log file not found.")
+            exit(1)
+        except json.decoder.JSONDecodeError:
+            print("Error: Log file broken.")
+            exit(1)
+        previous_record = None
+        for record in log[-int(args.count):] if args.count != -1 else log:
+            if (not args.video) or args.video == record["videoid"]:
+                print(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---')
+                print(f'Title: {record["title"]}')
+                print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
+                #print(f'Views: {record["counts"]["views"]}')
+                #print(f'Comments: {record["counts"]["comments"]}')
+                #print(f'Mylists: {record["counts"]["mylists"]}')
+                #print(f'Likes: {record["counts"]["likes"]}')
+                if previous_record:
+                    print(counts_comparing(
+                        'Views',
+                        record['counts']['views'],
+                        previous_record['counts']['views']
+                    ))
+                    print(counts_comparing(
+                        'Comments',
+                        record['counts']['comments'],
+                        previous_record['counts']['comments']
+                    ))
+                    print(counts_comparing(
+                        'Mylists',
+                        record['counts']['mylists'],
+                        previous_record['counts']['mylists']
+                    ))
+                    print(counts_comparing(
+                        'Likes',
+                        record['counts']['likes'],
+                        previous_record['counts']['likes']
+                    ))
+                else:
+                    print(counts_comparing('Views', record['counts']['views']))
+                    print(counts_comparing('Comments', record['counts']['comments']))
+                    print(counts_comparing('Mylists', record['counts']['mylists']))
+                    print(counts_comparing('Likes', record['counts']['likes']))
+                for tag in record["tags"]:
+                    if tag['locked']:
+                        print(f'Tag: {tag["name"]} [Locked]')
+                    else:
+                        print(f'Tag: {tag["name"]}')
+
+                previous_record = record
+
+if __name__ == '__main__':
+    main()
