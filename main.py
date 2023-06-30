@@ -22,7 +22,10 @@ def dictvar2str(inputdata: dict) -> list:
     """ ex. {a, {"b": True}, [c, d]} -> {str(a), {"b": True}, [str(c), str(d)]} """
     for key, var in inputdata.items():
         if not isinstance(var, (str, int, float, bool, type(None), dict, list, tuple)):
-            inputdata[key] = str(var)
+            if var.__class__.__module__ == 'nicovideo':
+                inputdata[key] = vars(var)
+            else:
+                inputdata[key] = str(var)
         if isinstance(var, (list, tuple)):
             inputdata[key] = listvar2str(var)
         if isinstance(var, dict):
@@ -60,7 +63,10 @@ if not args.readlog:
         print(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---')
         print(f'Title: {data.title}')
         print(f'Owner: {str(data.owner)}')
-        print(str(data.counts))
+        print(f'Views: {data.counts.views}')
+        print(f'Comments: {data.counts.comments}')
+        print(f'Mylists: {data.counts.mylists}')
+        print(f'Likes: {data.counts.likes}')
         for tag in data.tags:
             print(f'Tag: {tag.name}', '(Locked)' if tag.locked else '')
         if args.log:
@@ -87,7 +93,10 @@ else:
         if (not args.video) or args.video == record["videoid"]:
             print(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---')
             print(f'Title: {record["title"]}')
-            print(f'Owner: {record["owner"]}')
-            print(record["counts"])
+            print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
+            print(f'Views: {record["counts"]["views"]}')
+            print(f'Comments: {record["counts"]["comments"]}')
+            print(f'Mylists: {record["counts"]["mylists"]}')
+            print(f'Likes: {record["counts"]["likes"]}')
             for tag in record["tags"]:
                 print(f'Tag: {tag}')
