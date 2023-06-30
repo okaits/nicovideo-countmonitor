@@ -75,9 +75,9 @@ def counts_comparing(label: str, count: int, count_before: Union[int, type(None)
     elif count == count_before:
         return f'{label}: {count:,}'
     elif count > count_before:
-        return f'{label}: {count:,} (+{count - count_before:,})'
+        return f'{label}: {count:,}' + colors.cyan(f' (+{count - count_before:,})')
     else:
-        return f'{label}: {count:,} ({count - count_before:,})'
+        return f'{label}: {count:,}' + colors.red(f' ({count - count_before:,})')
 
 def main():
     """ Main func """
@@ -134,7 +134,7 @@ def main():
                 print(counts_comparing('Likes   ', data.counts.likes))
             print(colors.cyan('== Tags =='))
             for tag in data.tags:
-                print(f'Tag: {tag.name}', '(Locked)' if tag.locked else '')
+                print(f'Tag: {tag.name}', colors.yellow('[Locked]') if tag.locked else '')
             if args.log:
                 logdata = vars(data)
                 logdata["datetime"] = datetime.datetime.now()
@@ -197,7 +197,7 @@ def main():
                 print(colors.cyan('== Tags =='))
                 for tag in record["tags"]:
                     if tag['locked']:
-                        print(f'Tag: {tag["name"]} [Locked]')
+                        print(f'Tag: {tag["name"]}', colors.yellow('[Locked]'))
                     else:
                         print(f'Tag: {tag["name"]}')
 
