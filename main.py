@@ -6,16 +6,36 @@ import time
 import os
 from typing import Union
 from argparse import ArgumentParser
-from fabric import colors
+from fabric import colors # pylint: disable=E0401
 
 import nicovideo  # pylint: disable=E0401
 
-parser = ArgumentParser(prog='nicovide-countmonitor', description='Monitor nicovideo\'s video counter.')
-parser.add_argument('--video', '-v', help='Video ID', metavar='ID')
-parser.add_argument('--readlog', '-r', default=False, action="store_true", help='Replay log file, do not monitor')
-parser.add_argument('--interval', '-i', help='Interval second[s] (Ignored if --readlog specified)', default=10, metavar='second[s]')
-parser.add_argument('--log', '-l', help='Logging file (json)', default=None)
-parser.add_argument('--count', '-c', help='Records to show', default=-1)
+parser = ArgumentParser(
+    prog='nicovide-countmonitor',
+    description='Monitor nicovideo\'s video counter.'
+)
+parser.add_argument('--video', '-v',
+    help='Video ID',
+    metavar='ID'
+)
+parser.add_argument('--readlog', '-r',
+    default=False,
+    action="store_true",
+    help='Replay log file, do not monitor'
+)
+parser.add_argument('--interval', '-i',
+    help='Interval second[s] (Ignored if --readlog specified)',
+    default=10,
+    metavar='second[s]'
+)
+parser.add_argument('--log', '-l',
+    help='Logging file (json)',
+    default=None
+)
+parser.add_argument('--count', '-c',
+    help='Records to show',
+    default=-1
+)
 args = parser.parse_args()
 
 video = nicovideo.Video(args.video)
@@ -51,13 +71,13 @@ def listvar2str(inputdata: list) -> list:
 def counts_comparing(label: str, count: int, count_before: Union[int, type(None)] = None) -> str:
     """ ex. label=Views, count=100, count_before=80 -> "Views: 100 (+20)" """
     if count_before is None:
-        return f'{label}: {"{:,}".format(count)}'
+        return f'{label}: {count:,}'
     elif count == count_before:
-        return f'{label}: {"{:,}".format(count)}'
+        return f'{label}: {count:,}'
     elif count > count_before:
-        return f'{label}: {"{:,}".format(count)} (+{"{:,}".format(count - count_before)})'
+        return f'{label}: {count:,} (+{count - count_before:,})'
     else:
-        return f'{label}: {"{:,}".format(count)} ({"{:,}".format(count - count_before)})'
+        return f'{label}: {count:,} ({count - count_before:,})'
 
 def main():
     """ Main func """
@@ -79,16 +99,34 @@ def main():
         while True:
             count = count + 1
             data = video.get_metadata()
-            print('\n' + colors.magenta(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---', bold=True))
+            print('\n' + colors.magenta(
+                '--- nicovideo-countmonitor: '
+                f'{datetime.datetime.now()} @ {data.videoid} ---',
+                bold=True
+            ))
             print(colors.cyan('== Metadata =='))
             print(f'Title: {data.title}')
             print(f'Owner: {str(data.owner)}')
             print(colors.cyan('== Counters =='))
             if previous_data:
-                print(counts_comparing('Views   ', data.counts.views, previous_data.counts.views))
-                print(counts_comparing('Comments', data.counts.comments, previous_data.counts.comments))
-                print(counts_comparing('Mylists ', data.counts.mylists, previous_data.counts.mylists))
-                print(counts_comparing('Likes   ', data.counts.likes, previous_data.counts.likes))
+                print(counts_comparing(
+                    'Views   ',
+                    data.counts.views,
+                    previous_data.counts.views
+                ))
+                print(counts_comparing(
+                    'Comments',
+                    data.counts.comments,
+                    previous_data.counts.comments
+                ))
+                print(counts_comparing('Mylists ',
+                    data.counts.mylists,
+                    previous_data.counts.mylists
+                ))
+                print(counts_comparing('Likes   ',
+                    data.counts.likes,
+                    previous_data.counts.likes
+                ))
             else:
                 print(counts_comparing('Views   ', data.counts.views))
                 print(counts_comparing('Comments', data.counts.comments))
@@ -122,7 +160,10 @@ def main():
         previous_record = None
         for record in log[-int(args.count):] if args.count != -1 else log:
             if (not args.video) or args.video == record["videoid"]:
-                print('\n' + colors.magenta(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---', bold=True))
+                print('\n' + colors.magenta(
+                    f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---',
+                    bold=True
+                ))
                 print(colors.cyan('== Metadata =='))
                 print(f'Title: {record["title"]}')
                 print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
@@ -131,22 +172,22 @@ def main():
                     print(counts_comparing(
                         'Views   ',
                         record['counts']['views'],
-                        previous_record['counts']['views']
+                        previous_record['counts']['views'] # pylint: disable=E1136
                     ))
                     print(counts_comparing(
                         'Comments',
                         record['counts']['comments'],
-                        previous_record['counts']['comments']
+                        previous_record['counts']['comments'] # pylint: disable=E1136
                     ))
                     print(counts_comparing(
                         'Mylists ',
                         record['counts']['mylists'],
-                        previous_record['counts']['mylists']
+                        previous_record['counts']['mylists'] # pylint: disable=E1136
                     ))
                     print(counts_comparing(
                         'Likes   ',
                         record['counts']['likes'],
-                        previous_record['counts']['likes']
+                        previous_record['counts']['likes'] # pylint: disable=E1136
                     ))
                 else:
                     print(counts_comparing('Views   ', record['counts']['views']))
