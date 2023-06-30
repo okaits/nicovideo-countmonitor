@@ -6,6 +6,7 @@ import time
 import os
 from typing import Union
 from argparse import ArgumentParser
+from fabric import colors
 
 import nicovideo  # pylint: disable=E0401
 
@@ -50,13 +51,13 @@ def listvar2str(inputdata: list) -> list:
 def counts_comparing(label: str, count: int, count_before: Union[int, type(None)] = None) -> str:
     """ ex. label=Views, count=100, count_before=80 -> "Views: 100 (+20)" """
     if count_before is None:
-        return f'{label}: {count}'
+        return f'{label}: {"{:,}".format(count)}'
     elif count == count_before:
-        return f'{label}: {count}'
+        return f'{label}: {"{:,}".format(count)}'
     elif count > count_before:
-        return f'{label}: {count} (+{count - count_before})'
+        return f'{label}: {"{:,}".format(count)} (+{"{:,}".format(count - count_before)})'
     else:
-        return f'{label}: {count} ({count - count_before})'
+        return f'{label}: {"{:,}".format(count)} ({"{:,}".format(count - count_before)})'
 
 def main():
     """ Main func """
@@ -78,19 +79,22 @@ def main():
         while True:
             count = count + 1
             data = video.get_metadata()
-            print(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---')
+            print('\n' + colors.magenta(f'--- nicovideo-countmonitor: {datetime.datetime.now()} @ {data.videoid} ---', bold=True))
+            print(colors.cyan('== Metadata =='))
             print(f'Title: {data.title}')
             print(f'Owner: {str(data.owner)}')
+            print(colors.cyan('== Counters =='))
             if previous_data:
-                print(counts_comparing('Views', data.counts.views, previous_data.counts.views))
+                print(counts_comparing('Views   ', data.counts.views, previous_data.counts.views))
                 print(counts_comparing('Comments', data.counts.comments, previous_data.counts.comments))
-                print(counts_comparing('Mylists', data.counts.mylists, previous_data.counts.mylists))
-                print(counts_comparing('Likes', data.counts.likes, previous_data.counts.likes))
+                print(counts_comparing('Mylists ', data.counts.mylists, previous_data.counts.mylists))
+                print(counts_comparing('Likes   ', data.counts.likes, previous_data.counts.likes))
             else:
-                print(counts_comparing('Views', data.counts.views))
+                print(counts_comparing('Views   ', data.counts.views))
                 print(counts_comparing('Comments', data.counts.comments))
-                print(counts_comparing('Mylists', data.counts.mylists))
-                print(counts_comparing('Likes', data.counts.likes))
+                print(counts_comparing('Mylists ', data.counts.mylists))
+                print(counts_comparing('Likes   ', data.counts.likes))
+            print(colors.cyan('== Tags =='))
             for tag in data.tags:
                 print(f'Tag: {tag.name}', '(Locked)' if tag.locked else '')
             if args.log:
@@ -118,16 +122,14 @@ def main():
         previous_record = None
         for record in log[-int(args.count):] if args.count != -1 else log:
             if (not args.video) or args.video == record["videoid"]:
-                print(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---')
+                print('\n' + colors.magenta(f'--- nicovideo-countmonitor: {record["datetime"]} @ {record["videoid"]} ---', bold=True))
+                print(colors.cyan('== Metadata =='))
                 print(f'Title: {record["title"]}')
                 print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
-                #print(f'Views: {record["counts"]["views"]}')
-                #print(f'Comments: {record["counts"]["comments"]}')
-                #print(f'Mylists: {record["counts"]["mylists"]}')
-                #print(f'Likes: {record["counts"]["likes"]}')
+                print(colors.cyan('== Counters =='))
                 if previous_record:
                     print(counts_comparing(
-                        'Views',
+                        'Views   ',
                         record['counts']['views'],
                         previous_record['counts']['views']
                     ))
@@ -137,20 +139,21 @@ def main():
                         previous_record['counts']['comments']
                     ))
                     print(counts_comparing(
-                        'Mylists',
+                        'Mylists ',
                         record['counts']['mylists'],
                         previous_record['counts']['mylists']
                     ))
                     print(counts_comparing(
-                        'Likes',
+                        'Likes   ',
                         record['counts']['likes'],
                         previous_record['counts']['likes']
                     ))
                 else:
-                    print(counts_comparing('Views', record['counts']['views']))
+                    print(counts_comparing('Views   ', record['counts']['views']))
                     print(counts_comparing('Comments', record['counts']['comments']))
-                    print(counts_comparing('Mylists', record['counts']['mylists']))
-                    print(counts_comparing('Likes', record['counts']['likes']))
+                    print(counts_comparing('Mylists ', record['counts']['mylists']))
+                    print(counts_comparing('Likes   ', record['counts']['likes']))
+                print(colors.cyan('== Tags =='))
                 for tag in record["tags"]:
                     if tag['locked']:
                         print(f'Tag: {tag["name"]} [Locked]')
