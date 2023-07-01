@@ -46,6 +46,7 @@ def dictvar2str(inputdata: dict) -> list:
         if not isinstance(var, (str, int, float, bool, type(None), dict, list, tuple)):
             if var.__class__.__module__ == 'nicovideo':
                 inputdata[key] = vars(var)
+                inputdata = dictvar2str(inputdata)
             else:
                 inputdata[key] = str(var)
         if isinstance(var, (list, tuple)):
@@ -60,6 +61,7 @@ def listvar2str(inputdata: list) -> list:
         if not isinstance(var, (str, int, float, bool, type(None), dict, list, tuple)):
             if var.__class__.__module__ == 'nicovideo':
                 inputdata[index] = vars(var)
+                inputdata = listvar2str(inputdata)
             else:
                 inputdata[index] = str(var)
         if isinstance(var, (list, tuple)):
