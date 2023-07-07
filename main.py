@@ -6,6 +6,7 @@ import os
 import time
 from argparse import ArgumentParser
 from typing import Union
+from queue import Queue
 
 import nicovideo  # pylint: disable=E0401
 from fabric import colors  # pylint: disable=E0401
@@ -96,56 +97,60 @@ def main():
             jsonlog = []
 
     if not args.readlog:
+        queue = Queue()
         count = 0
         previous_data = None
         while True:
             count = count + 1
             data = video.get_metadata()
-            print('\n' + colors.magenta(
+            queue.put('\n' + colors.magenta(
                 '--- nicovideo-countmonitor: '
                 f'{datetime.datetime.now()} @ {data.videoid} ---',
                 bold=True
             ))
-            print(colors.cyan('== Metadata =='))
-            print(f'Title: {data.title}')
-            print(f'Owner: {str(data.owner)}')
-            print(colors.cyan('== Counters =='))
+            queue.put(colors.cyan('== Metadata =='))
+            queue.put(f'Title: {data.title}')
+            queue.put(f'Owner: {str(data.owner)}')
+            queue.put(colors.cyan('== Counters =='))
             if previous_data:
-                print(counts_comparing(
+                queue.put(counts_comparing(
                     'Views   ',
                     data.counts.views,
                     previous_data.counts.views
                 ))
-                print(counts_comparing(
+                queue.put(counts_comparing(
                     'Comments',
                     data.counts.comments,
                     previous_data.counts.comments
                 ))
-                print(counts_comparing('Mylists ',
+                queue.put(counts_comparing('Mylists ',
                     data.counts.mylists,
                     previous_data.counts.mylists
                 ))
-                print(counts_comparing('Likes   ',
+                queue.put(counts_comparing('Likes   ',
                     data.counts.likes,
                     previous_data.counts.likes
                 ))
             else:
-                print(counts_comparing('Views   ', data.counts.views))
-                print(counts_comparing('Comments', data.counts.comments))
-                print(counts_comparing('Mylists ', data.counts.mylists))
-                print(counts_comparing('Likes   ', data.counts.likes))
-            print(colors.cyan('== Series =='))
+                queue.put(counts_comparing('Views   ', data.counts.views))
+                queue.put(counts_comparing('Comments', data.counts.comments))
+                queue.put(counts_comparing('Mylists ', data.counts.mylists))
+                queue.put(counts_comparing('Likes   ', data.counts.likes))
+            queue.put(colors.cyan('== Series =='))
             if data.series:
-                print(f'Title   : {data.series.title}')
-                print('Next    : ' + data.series.prev_video.get_metadata().title
+                queue.put(f'Title   : {data.series.title}')
+                queue.put('Next    : ' + data.series.prev_video.get_metadata().title
                     if data.series.prev_video else colors.yellow('No next video.'))
-                print('Previous: ' + data.series.next_video.get_metadata().title
+                queue.put('Previous: ' + data.series.next_video.get_metadata().title
                     if data.series.next_video else colors.yellow('No previous video.'))
             else:
-                print(colors.red('No series.'))
-            print(colors.cyan('== Tags =='))
+                queue.put(colors.red('No series.'))
+            queue.put(colors.cyan('== Tags =='))
             for tag in data.tags:
-                print(f'Tag: {tag.name}', colors.yellow('[Locked]') if tag.locked else '')
+                if tag.locked:
+                    queue.put(f'Tag: {tag.name} ' + colors.yellow('[Locked]'))
+                else:
+                    queue.put(f'Tag: {tag.name}')
             if args.log:
                 logdata = vars(data)
                 logdata["datetime"] = datetime.datetime.now()
@@ -153,6 +158,8 @@ def main():
                 jsonlog.append(logdata)
                 with open(args.log, 'w', encoding='utf-8') as logfile:
                     logfile.write(json.dumps(jsonlog))
+            for line in queue.queue:
+                print(line)
             if count >= int(args.count) and args.count != -1:
                 break
 
