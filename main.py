@@ -139,10 +139,14 @@ def main():
             queue.put(colors.cyan('== Series =='))
             if data.series:
                 queue.put(f'Title   : {data.series.title}')
-                queue.put('Next    : ' + data.series.prev_video.get_metadata().title
-                    if data.series.prev_video else colors.yellow('No next video.'))
-                queue.put('Previous: ' + data.series.next_video.get_metadata().title
-                    if data.series.next_video else colors.yellow('No previous video.'))
+                if data.series.prev_video:
+                    queue.put('Previous: ' + data.series.prev_video.get_metadata().title)
+                else:
+                    queue.put('Previous: ' + colors.yellow('None'))
+                if data.series.next_video:
+                    queue.put('Next    : ' + data.series.next_video.get_metadata().title)
+                else:
+                    queue.put('Next    : ' + colors.yellow('None'))
             else:
                 queue.put(colors.red('No series.'))
             queue.put(colors.cyan('== Tags =='))
