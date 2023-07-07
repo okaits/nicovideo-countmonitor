@@ -2,13 +2,13 @@
 
 import datetime
 import json
-import time
 import os
-from typing import Union
+import time
 from argparse import ArgumentParser
-from fabric import colors # pylint: disable=E0401
+from typing import Union
 
 import nicovideo  # pylint: disable=E0401
+from fabric import colors  # pylint: disable=E0401
 
 parser = ArgumentParser(
     prog='nicovide-countmonitor',
