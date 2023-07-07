@@ -134,6 +134,15 @@ def main():
                 print(counts_comparing('Comments', data.counts.comments))
                 print(counts_comparing('Mylists ', data.counts.mylists))
                 print(counts_comparing('Likes   ', data.counts.likes))
+            print(colors.cyan('== Series =='))
+            if data.series:
+                print(f'Title   : {data.series.title}')
+                print('Next    : ' + data.series.prev_video.get_metadata().title
+                    if data.series.prev_video else colors.yellow('No next video.'))
+                print('Previous: ' + data.series.next_video.get_metadata().title
+                    if data.series.next_video else colors.yellow('No previous video.'))
+            else:
+                print(colors.red('No series.'))
             print(colors.cyan('== Tags =='))
             for tag in data.tags:
                 print(f'Tag: {tag.name}', colors.yellow('[Locked]') if tag.locked else '')
