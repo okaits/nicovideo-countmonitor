@@ -152,9 +152,9 @@ def main():
             queue.put(colors.cyan('== Tags =='))
             for tag in data.tags:
                 if tag.locked:
-                    queue.put(f'Tag: {tag.name} ' + colors.yellow('[Locked]'))
+                    queue.put('Tag ' + colors.yellow('[Locked]') + f': {tag.name} ')
                 else:
-                    queue.put(f'Tag: {tag.name}')
+                    queue.put(f'Tag         : {tag.name}')
             if args.log:
                 logdata = vars(data)
                 logdata["datetime"] = datetime.datetime.now()
