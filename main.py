@@ -84,19 +84,22 @@ def counts_comparing(label: str, count: int, count_before: Union[int, type(None)
     else:
         return f'{label}: {count:,}' + colors.red(f' ({count - count_before:,})')
 
+def loadlog(logpath: str):
+    try:
+        with open(logpath, 'r', encoding='utf-8') as logfile:
+            jsonlog = json.load(logfile)
+    except json.decoder.JSONDecodeError:
+        if os.path.isfile(logpath):
+            print('Error: Log file broken. Exitting...')
+            exit(1)
+    except FileNotFoundError:
+        jsonlog = []
+    return jsonlog
+
 def main():
     """ Main func """
     if args.log and not args.readlog:
         print('Logging enabled.')
-        try:
-            with open(args.log, 'r', encoding='utf-8') as logfile:
-                jsonlog = json.load(logfile)
-        except json.decoder.JSONDecodeError:
-            if os.path.isfile(args.log):
-                print('Error: Log file broken. Exitting...')
-                exit(1)
-        except FileNotFoundError:
-            jsonlog = []
 
     if not args.readlog:
         queue = Queue()
@@ -165,6 +168,7 @@ def main():
                 else:
                     queue.put(f'Tag         : {tag.name}')
             if args.log:
+                jsonlog = loadlog(args.log)
                 logdata = vars(data)
                 logdata["datetime"] = datetime.datetime.now()
                 logdata = dictvar2str(logdata.copy())
