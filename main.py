@@ -183,15 +183,9 @@ def main():
             previous_data = data
             time.sleep(int(args.interval))
     else:
-        try:
-            with open(args.log, 'r', encoding='utf-8') as logfile:
-                log = json.load(logfile)
-        except FileNotFoundError:
-            print("Error: Log file not found.")
-            exit(1)
-        except json.decoder.JSONDecodeError:
-            print("Error: Log file broken.")
-            exit(1)
+        log = loadlog(args.log)
+        if not log:
+            raise Exception("Log file empty.")
         previous_record = None
         for record in log[-int(args.count):] if args.count != -1 else log:
             if (not args.video) or args.video == record["videoid"]:
@@ -203,7 +197,9 @@ def main():
                 print(f'Title: {record["title"]}')
                 print(f'Owner: {record["owner"]["nickname"]} [ID: {record["owner"]["id"]}]')
                 print(colors.cyan('== Counters =='))
+                points = record['counts']['views']*3+record['counts']['comments']*9+record['counts']['mylists']*90+record['counts']['likes']*30
                 if previous_record:
+                    prev_points = previous_record['counts']['views']*3+previous_record['counts']['comments']*9+previous_record['counts']['mylists']*90+previous_record['counts']['likes']*30
                     print(counts_comparing(
                         'Views   ',
                         record['counts']['views'],
@@ -224,11 +220,17 @@ def main():
                         record['counts']['likes'],
                         previous_record['counts']['likes'] # pylint: disable=E1136
                     ))
+                    print(counts_comparing(
+                        'Points  ',
+                        points,
+                        prev_points
+                    ))
                 else:
                     print(counts_comparing('Views   ', record['counts']['views']))
                     print(counts_comparing('Comments', record['counts']['comments']))
                     print(counts_comparing('Mylists ', record['counts']['mylists']))
                     print(counts_comparing('Likes   ', record['counts']['likes']))
+                    print(counts_comparing('Points  ', points))
                 print(colors.cyan('== Tags =='))
                 for tag in record["tags"]:
                     if tag['locked']:
