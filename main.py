@@ -11,6 +11,8 @@ from queue import Queue
 import nicovideo  # pylint: disable=E0401
 from fabric import colors  # pylint: disable=E0401
 
+# Points: Views*3 + Comments*9 + Mylists*90 + Likes*30
+
 parser = ArgumentParser(
     prog='nicovide-countmonitor',
     description='Monitor nicovideo\'s video counter.'
@@ -112,7 +114,10 @@ def main():
             queue.put(f'Title: {data.title}')
             queue.put(f'Owner: {str(data.owner)}')
             queue.put(colors.cyan('== Counters =='))
+            # Points
+            points = data.counts.views*3+data.counts.comments*9+data.counts.mylists*90+data.counts.likes*30
             if previous_data:
+                prev_points = previous_data.counts.views*3+previous_data.counts.comments*9+previous_data.counts.mylists*90+previous_data.counts.likes*30
                 queue.put(counts_comparing(
                     'Views   ',
                     data.counts.views,
@@ -131,11 +136,15 @@ def main():
                     data.counts.likes,
                     previous_data.counts.likes
                 ))
+                queue.put(counts_comparing('Points  ',
+                    points,
+                    prev_points))
             else:
                 queue.put(counts_comparing('Views   ', data.counts.views))
                 queue.put(counts_comparing('Comments', data.counts.comments))
                 queue.put(counts_comparing('Mylists ', data.counts.mylists))
                 queue.put(counts_comparing('Likes   ', data.counts.likes))
+                queue.put(counts_comparing('Points  ', points))
             queue.put(colors.cyan('== Series =='))
             if data.series:
                 queue.put(f'Title   : {data.series.title}')
