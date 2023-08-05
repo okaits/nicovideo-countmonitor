@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import time
+import fcntl
 from argparse import ArgumentParser
 from typing import Union
 from queue import Queue
@@ -87,7 +88,9 @@ def counts_comparing(label: str, count: int, count_before: Union[int, type(None)
 def loadlog(logpath: str):
     try:
         with open(logpath, 'r', encoding='utf-8') as logfile:
+            fcntl.flock(logfile, fcntl.LOCK_SH)
             jsonlog = json.load(logfile)
+            fcntl.flock(logfile, fcntl.LOCK_UN)
     except json.decoder.JSONDecodeError:
         if os.path.isfile(logpath):
             print('Error: Log file broken. Exitting...')
@@ -174,7 +177,9 @@ def main():
                 logdata = dictvar2str(logdata.copy())
                 jsonlog.append(logdata)
                 with open(args.log, 'w', encoding='utf-8') as logfile:
+                    fcntl.flock(logfile, fcntl.LOCK_EX)
                     logfile.write(json.dumps(jsonlog))
+                    fcntl.flock(logfile, fcntl.LOCK_UN)
             for line in queue.queue:
                 print(line)
             if count >= int(args.count) and args.count != -1:
