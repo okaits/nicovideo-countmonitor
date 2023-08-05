@@ -133,7 +133,7 @@ def main():
             data = video.get_metadata()
             queue.put('\n' + colors.magenta(
                 '--- nicovideo-countmonitor: '
-                f'{datetime.datetime.now()} @ {data.videoid} ---',
+                f'{datetime.datetime.now()} @ {data.videoid} / interval: {args.interval}sec. ---',
                 bold=True
             ))
             queue.put(colors.cyan('== Metadata =='))
