@@ -101,6 +101,23 @@ def loadlog(logpath: str):
         jsonlog = []
     return jsonlog
 
+def dendou_iri_toka_check(views): #Kore eigode nante iuno?
+    if views < 100000:
+        if views >= 90000:
+            return colors.red(f" [称号: 殿堂入り直前]") + " [殿堂入りまで残り{100000-views}再生]"
+        else:
+            return f" [称号: なし] [殿堂入りまで残り{100000-views}再生]"
+    elif views < 1000000:
+        if views >= 900000:
+            return colors.red(f" [称号: 殿堂入り, 伝説入り直前]") + " [伝説入りまで残り{1000000-views}再生]"
+        else:
+            return f" [称号: 殿堂入り] [伝説入りまで残り{1000000-views}再生]"
+    elif views < 10000000:
+        if views >= 9000000:
+            return colors.red(f" [称号: 伝説入り, 神話入り直前]") + " [神話入りまで残り{10000000-views}再生]"
+        else:
+            return f" [称号: 伝説入り] [神話入りまで残り{10000000-views}再生]"
+
 def main():
     """ Main func """
     if args.log and not args.readlog:
@@ -169,7 +186,7 @@ def main():
                 else:
                     queue.put("AvgSpeed: -")
             else:
-                queue.put(counts_comparing('Views   ', data.counts.views))
+                queue.put(counts_comparing('Views   ', data.counts.views) + dendou_iri_toka_check(data.counts.views))
                 queue.put(counts_comparing('Comments', data.counts.comments))
                 queue.put(counts_comparing('Mylists ', data.counts.mylists))
                 queue.put(counts_comparing('Likes   ', data.counts.likes))
