@@ -4,6 +4,7 @@ import datetime
 import json
 import os
 import time
+import statistics
 import fcntl
 from argparse import ArgumentParser
 from typing import Union
@@ -13,6 +14,7 @@ import nicovideo  # pylint: disable=E0401
 from fabric import colors  # pylint: disable=E0401
 
 # Points: Views*3 + Comments*9 + Mylists*90 + Likes*30
+# Speed : Views/sec*25 + Comments/sec*50 + Mylists/sec*1000 + Likes/sec*2000
 
 parser = ArgumentParser(
     prog='nicovide-countmonitor',
@@ -81,9 +83,9 @@ def counts_comparing(label: str, count: int, count_before: Union[int, type(None)
     elif count == count_before:
         return f'{label}: {count:,}'
     elif count > count_before:
-        return f'{label}: {count:,}' + colors.cyan(f' (+{count - count_before:,})')
+        return f'{label}: {count:,}' + colors.cyan(f' (+{int(count - count_before):,})')
     else:
-        return f'{label}: {count:,}' + colors.red(f' ({count - count_before:,})')
+        return f'{label}: {count:,}' + colors.red(f' ({int(count - count_before):,})')
 
 def loadlog(logpath: str):
     try:
@@ -108,6 +110,7 @@ def main():
         queue = Queue()
         count = 0
         previous_data = None
+        speeds = []
         while True:
             count = count + 1
             data = video.get_metadata()
@@ -124,11 +127,12 @@ def main():
             points = data.counts.views*3+data.counts.comments*9+data.counts.mylists*90+data.counts.likes*30
             if previous_data:
                 prev_points = previous_data.counts.views*3+previous_data.counts.comments*9+previous_data.counts.mylists*90+previous_data.counts.likes*30
+                speed = round(((data.counts.views-previous_data.counts.views)*500+(data.counts.comments-previous_data.counts.comments)*5000+(data.counts.mylists-previous_data.counts.mylists)*20000+(data.counts.likes-previous_data.counts.likes)*40000)/int(args.interval), 2)
                 queue.put(counts_comparing(
                     'Views   ',
                     data.counts.views,
                     previous_data.counts.views
-                ))
+                ) + dendou_iri_toka_check(data.counts.views))
                 queue.put(counts_comparing(
                     'Comments',
                     data.counts.comments,
@@ -144,13 +148,34 @@ def main():
                 ))
                 queue.put(counts_comparing('Points  ',
                     points,
-                    prev_points))
+                    prev_points
+                ))
+                if len(speeds) > 0:
+                    queue.put(counts_comparing('Speed   ',
+                        speed,
+                        speeds[-1:][0]
+                    ))
+                else:
+                    queue.put(counts_comparing('Speed   ', speed))
+                speeds.append(speed)
+                if len(speeds) > 0:
+                    if len(speeds) > 1:
+                        queue.put(counts_comparing('AvgSpeed',
+                            round(statistics.mean(speeds), 2),
+                            round(statistics.mean(speeds[:-1]), 2)
+                        ))
+                    else:
+                        queue.put(counts_comparing("AvgSpeed", round(statistics.mean(speeds), 2)))
+                else:
+                    queue.put("AvgSpeed: -")
             else:
                 queue.put(counts_comparing('Views   ', data.counts.views))
                 queue.put(counts_comparing('Comments', data.counts.comments))
                 queue.put(counts_comparing('Mylists ', data.counts.mylists))
                 queue.put(counts_comparing('Likes   ', data.counts.likes))
                 queue.put(counts_comparing('Points  ', points))
+                queue.put("Speed   : -")
+                queue.put("AvgSpeed: -")
             queue.put(colors.cyan('== Series =='))
             if data.series:
                 queue.put(f'Title   : {data.series.title}')
